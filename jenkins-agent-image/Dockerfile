@@ -1,5 +1,5 @@
 FROM maven:3-openjdk-17-slim
-
+RUN apk add --no-cache docker-cli
 # Install Docker CLI
 # This block adds Docker's official GPG key and repository, then installs docker-ce-cli
 RUN apt-get update && \
