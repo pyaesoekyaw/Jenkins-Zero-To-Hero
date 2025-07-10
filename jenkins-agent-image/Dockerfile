@@ -29,6 +29,6 @@ RUN apt-get update && \
 
 # Add git (if not already present and needed for other steps)
 # RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 # Set working directory (your existing part)
 WORKDIR /app
