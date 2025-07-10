@@ -1,31 +1,18 @@
-# Use a Maven image that includes OpenJDK 17
-# You can find various options on Docker Hub, e.g., 'maven:3.9.6-openjdk-17-slim'
 FROM maven:3-openjdk-17-slim
 
-# You need Docker CLI inside this agent if it needs to run Docker commands itself.
-# Your current Jenkinsfile mounts the host's Docker socket, which is good,
-# but the agent container still needs the 'docker' CLI.
-# This part might already be included in 'abhishekf5/maven-abhishek-docker-agent:v1'
-# but if you start from a 'maven' base, you might need to add it.
-# Check the documentation for 'maven:*-openjdk-17-slim' if it includes docker cli.
-# If not, you might need to install it:
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     docker.io \
-#     && rm -rf /var/lib/apt/lists/*
+# Install Docker CLI
+# This block adds Docker's official GPG key and repository, then installs docker-ce-cli
+RUN apt-get update && \
+    apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set up a non-root user if desired for better security (optional but recommended)
-# ARG UID=1000
-# ARG GID=1000
-# RUN groupadd -g ${GID} jenkins && useradd -u ${UID} -g jenkins -m jenkins
-# USER jenkins
+# Add git and other tools if needed for other pipeline steps
+# RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Your existing WORKDIR and other commands
 WORKDIR /app
-
-# The original 'abhishekf5/maven-abhishek-docker-agent:v1' likely has other tools.
-# Add any other tools your pipeline needs (e.g., git, curl, etc.)
-# RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
-
-# Set JAVA_HOME explicitly if needed, though most OpenJDK images set it
-# ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
-# ENV PATH $JAVA_HOME/bin:$PATH
