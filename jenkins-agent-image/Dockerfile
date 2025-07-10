@@ -1,6 +1,6 @@
 # Use a Maven image that includes OpenJDK 17
 # You can find various options on Docker Hub, e.g., 'maven:3.9.6-openjdk-17-slim'
-FROM maven:3.9.6-openjdk-17-slim
+FROM maven:3-openjdk-17-slim
 
 # You need Docker CLI inside this agent if it needs to run Docker commands itself.
 # Your current Jenkinsfile mounts the host's Docker socket, which is good,
