@@ -68,8 +68,15 @@ pipeline {
         steps {
             withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                 sh '''
-                    git config user.email "pyaesoekyaw1123@gmail.com"
-                    git config user.name "Pyae Soe Kyaw"
+                    cd java-maven-sonar-argocd-helm-k8s/
+
+                    # Diagnostic: Confirm current directory
+                    echo "Current directory for git commands: $(pwd)"
+                    ls -la .git/ || echo ".git directory not found here." # Check if .git exists
+
+                    git config user.email "pyaesoekyaw1123@gmail.com" # Updated email
+                    git config user.name "Pyae Soe Kyaw"             # Updated name
+
                     BUILD_NUMBER=${BUILD_NUMBER}
                     sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
                     git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
