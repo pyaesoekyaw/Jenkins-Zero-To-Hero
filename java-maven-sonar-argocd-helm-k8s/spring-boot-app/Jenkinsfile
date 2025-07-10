@@ -37,14 +37,22 @@ pipeline {
       }
       steps {
         script {
-            sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app'
-            // --- ADD THESE DIAGNOSTIC LINES HERE ---
-            sh 'echo "Current working directory: $(pwd)"'
-            sh 'echo "PATH inside container: $PATH"'
-            sh 'which docker || echo "docker command not found in PATH"' // This will show path or confirm not found
-            sh 'docker --version || echo "docker --version failed"' // This will test if docker command exists and can run
-            // --- END DIAGNOSTIC LINES ---
-            sh 'docker build -t ${DOCKER_IMAGE} .' // The failing command
+            sh '''
+                echo "--- Debugging Dockerfile location ---"
+                echo "Initial current directory: $(pwd)"
+
+                cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
+
+                echo "Current directory AFTER cd: $(pwd)"
+                echo "Listing contents of the current directory (where Dockerfile should be):"
+                ls -l Dockerfile # Try to list only the Dockerfile
+                ls -l           # List all files/dirs in the current directory
+                ls -la          # List all, including hidden files
+
+                echo "--- End Debugging ---"
+
+                docker build -t ${DOCKER_IMAGE} .
+            '''
             def dockerImage = docker.image("${DOCKER_IMAGE}")
             docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
                 dockerImage.push()
