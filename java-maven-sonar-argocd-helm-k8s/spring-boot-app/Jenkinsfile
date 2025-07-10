@@ -51,7 +51,7 @@ pipeline {
     // --- THIS IS THE CRUCIAL CHANGE FOR THIS STAGE ---
     stage('Update Deployment File') {
       agent {
-        label 'master' // Run this stage on the Jenkins controller (built-in node)
+        label 'built-in' // Run this stage on the Jenkins controller (built-in node)
                        // Or 'built-in' for older Jenkins versions.
       }
       environment {
