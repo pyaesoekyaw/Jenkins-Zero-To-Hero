@@ -10,7 +10,7 @@ pipeline {
     stage('Checkout') {
       steps {
         sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
+        //git branch: 'main', url: 'https://github.com/pyaesoekyaw/Jenkins-Zero-To-Hero'
       }
     }
     stage('Build and Test') {
@@ -33,12 +33,18 @@ pipeline {
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "pyae5/ultimate-cicd:${BUILD_NUMBER}"
-        // DOCKERFILE_LOCATION = "java-maven-sonar-argocd-helm-k8s/spring-boot-app/Dockerfile"
         REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
         script {
-            sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+            sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app'
+            // --- ADD THESE DIAGNOSTIC LINES HERE ---
+            sh 'echo "Current working directory: $(pwd)"'
+            sh 'echo "PATH inside container: $PATH"'
+            sh 'which docker || echo "docker command not found in PATH"' // This will show path or confirm not found
+            sh 'docker --version || echo "docker --version failed"' // This will test if docker command exists and can run
+            // --- END DIAGNOSTIC LINES ---
+            sh 'docker build -t ${DOCKER_IMAGE} .' // The failing command
             def dockerImage = docker.image("${DOCKER_IMAGE}")
             docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
                 dockerImage.push()
