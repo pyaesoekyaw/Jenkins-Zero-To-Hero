@@ -2,21 +2,21 @@ pipeline {
   agent {
     docker {
       image 'pyae5/maven-java17-agent:v1'
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
-      alwaysPull true 
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+      alwaysPull true // Keep this to ensure latest agent image
     }
   }
   stages {
     stage('Checkout') {
       steps {
         sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/pyaesoekyaw/Jenkins-Zero-To-Hero'
+        // This stage is mostly a placeholder now, as the SCM checkout is done by the pipeline agent implicitly.
+        // The actual code will be available in the workspace.
       }
     }
     stage('Build and Test') {
       steps {
         sh 'ls -ltr'
-        // build the project and create a JAR file
         sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn clean package'
       }
     }
@@ -32,25 +32,13 @@ pipeline {
     }
     stage('Build and Push Docker Image') {
       environment {
-        DOCKER_IMAGE = "pyae5/ultimate-cicd:${BUILD_NUMBER}"
+        DOCKER_IMAGE = "pyae5/ultimate-cicd:${BUILD_NUMBER}" // Use your own username here
         REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
         script {
             sh '''
-                echo "--- Debugging Dockerfile location ---"
-                echo "Initial current directory: $(pwd)"
-
                 cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
-
-                echo "Current directory AFTER cd: $(pwd)"
-                echo "Listing contents of the current directory (where Dockerfile should be):"
-                ls -l Dockerfile # Try to list only the Dockerfile
-                ls -l           # List all files/dirs in the current directory
-                ls -la          # List all, including hidden files
-
-                echo "--- End Debugging ---"
-
                 docker build -t ${DOCKER_IMAGE} .
             '''
             def dockerImage = docker.image("${DOCKER_IMAGE}")
@@ -60,38 +48,45 @@ pipeline {
         }
       }
     }
+    // --- THIS IS THE CRUCIAL CHANGE FOR THIS STAGE ---
     stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
-            GIT_USER_NAME = "pyaesoekyaw"
-        }
-        steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    # Ensure we are at the Jenkins workspace root
-                    # Jenkins's default checkout usually places the .git directory here.
-                    echo "Current directory (before navigating to workspace root): $(pwd)"
-                    cd /var/lib/jenkins/workspace/pipedlfj/ # Go to the absolute root of the Jenkins workspace
+      agent {
+        label 'master' // Run this stage on the Jenkins controller (built-in node)
+                       // Or 'built-in' for older Jenkins versions.
+      }
+      environment {
+          GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
+          GIT_USER_NAME = "pyaesoekyaw" // Use your GitHub username here
+      }
+      steps {
+          withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+              sh '''
+                  # Navigate to the root of the cloned repository for Git operations
+                  # This path should be correct when running on the master agent
+                  cd /var/lib/jenkins/workspace/pipedlfj/java-maven-sonar-argocd-helm-k8s/
 
-                    echo "Current directory (after navigating to workspace root): $(pwd)"
-                    ls -la .git/ || echo ".git directory still not found at workspace root. (THIS IS UNEXPECTED IF ERROR PERSISTS)" # Diagnostic for .git
+                  echo "Current directory for git commands on master: $(pwd)"
+                  ls -la .git/ || echo ".git directory still not found on master." # This should now work!
 
-                    git config user.email "pyaesoekyaw1123@gmail.com"
-                    git config user.name "Pyae Soe Kyaw"
-                    
-                    BUILD_NUMBER=${BUILD_NUMBER}
+                  git config user.email "pyaesoekyaw1123@gmail.com" # Use your actual email
+                  git config user.name "Pyae Soe Kyaw"             # Use your actual name
 
-                    # Paths for sed, git add, and git commit are now relative to the workspace root
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    
-                    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                  BUILD_NUMBER=${BUILD_NUMBER}
 
-                    # git push can use the full URL or relative to the .git directory
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
-            }
-        }
+                  # Path to deployment.yml is relative to the directory we cd'd into
+                  sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
+                  
+                  git add spring-boot-app-manifests/deployment.yml
+                  git commit -m "Update deployment image to version ${BUILD_NUMBER} [skip ci]" # [skip ci] to prevent infinite build loop
+                  
+                  # Push changes using the GITHUB_TOKEN
+                  # This pushes to the original repo owner (iam-veeramalla) if you have permission
+                  # If you want to push to your fork, use:
+                  # git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                  git push https://${GITHUB_TOKEN}@github.com/iam-veeramalla/${GIT_REPO_NAME} HEAD:main # Pushing to original repo
+              '''
+          }
+      }
     }
   }
 }
