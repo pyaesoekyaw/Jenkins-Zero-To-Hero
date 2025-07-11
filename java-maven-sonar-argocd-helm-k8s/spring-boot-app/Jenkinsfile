@@ -1,8 +1,11 @@
 pipeline {
+--- a/Jenkinsfile
++++ b/Jenkinsfile
+@@ -2,7 +2,7 @@
   agent {
     docker {
       image 'pyae5/maven-java17-agent:v1'
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+      args '-v /var/run/docker.sock:/var/run/docker.sock' // Removed --user root
       alwaysPull true // Keep this to ensure latest agent image
     }
   }
