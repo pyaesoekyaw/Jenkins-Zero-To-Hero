@@ -1,7 +1,4 @@
 pipeline {
---- a/Jenkinsfile
-+++ b/Jenkinsfile
-@@ -2,7 +2,7 @@
   agent {
     docker {
       image 'pyae5/maven-java17-agent:v1'
