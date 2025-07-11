@@ -2,7 +2,7 @@ pipeline {
   agent {
     docker {
       image 'pyae5/maven-java17-agent:v1'
-      args "-u $(id -u jenkins):$(id -g jenkins) -v /var/run/docker.sock:/var/run/docker.sock"
+      args "-u \$(id -u jenkins):\$(id -g jenkins) -v /var/run/docker.sock:/var/run/docker.sock"
       alwaysPull true // Keep this to ensure latest agent image
     }
   }
